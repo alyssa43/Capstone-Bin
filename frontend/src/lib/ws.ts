@@ -79,14 +79,11 @@ function resolveWsUrl(bucketId: string): string {
 
   let wsOrigin: string
   if (configured && /^https?:\/\//.test(configured)) {
-    // Absolute URL: use its origin only, ignore any path (e.g. "/api").
     const url = new URL(configured)
     wsOrigin = `${url.protocol === 'https:' ? 'wss:' : 'ws:'}//${url.host}`
-  } else if (configured && configured.startsWith('/')) {
-    // Relative path (e.g. "/api"): resolve against the page's own origin.
+  } else if (configured === undefined || configured === '' || configured.startsWith('/')) {
     wsOrigin = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`
   } else {
-    // Unset, blank, or schemeless/malformed: fall back to DEFAULT_API_URL.
     const fallback = new URL(DEFAULT_API_URL)
     wsOrigin = `${fallback.protocol === 'https:' ? 'wss:' : 'ws:'}//${fallback.host}`
   }
