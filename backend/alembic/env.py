@@ -14,7 +14,9 @@ config = context.config
 # in alembic.ini.
 from config import DATABASE_URL
 
-config.set_main_option("sqlalchemy.url", DATABASE_URL)
+# configparser treats % as interpolation syntax, so a percent-encoded
+# password (e.g. %21 for "!") has to be escaped as %% here.
+config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("%", "%%"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
