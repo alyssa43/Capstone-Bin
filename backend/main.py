@@ -1,16 +1,14 @@
 import asyncio
 import logging
-import os
+
+from config import FRONTEND_ORIGINS
 from contextlib import asynccontextmanager
 
-from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from routes import bins, catch_all, websocket
 from services.cleanup import sweep_loop
-
-load_dotenv()
 
 # Uvicorn only configures its own loggers, so without a root handler the
 # retention sweep's INFO lines never reach the console.
@@ -31,7 +29,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Request Bin", lifespan=lifespan)
 
-frontend_origins = os.getenv("FRONTEND_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+frontend_origins = FRONTEND_ORIGINS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[origin.strip() for origin in frontend_origins.split(",") if origin.strip()],

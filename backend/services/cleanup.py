@@ -1,7 +1,7 @@
 """
 Retention sweeps for expired bins and requests.
 
-Three rules, all configurable via env vars:
+Three rules, all configurable via SSM Parameter Store under `capstone-bin/app/`:
 
 * a bin is deleted once `BIN_TTL_HOURS` have passed since its last captured
   request (`Bucket.last_visit_at`, reset on every capture in routes/catch_all.py)
@@ -18,12 +18,10 @@ bucket_requests rows whose payloads 404 in the inspector.
 
 import asyncio
 import logging
-import os
 from datetime import datetime, timedelta, timezone
 
 from bson import ObjectId
 from bson.errors import InvalidId
-from dotenv import load_dotenv
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -33,30 +31,14 @@ from models.bucket import Bucket
 from models.bucket_request import BucketRequest
 from models.database import SessionLocal
 
-load_dotenv()
+from config import (
+    BIN_TTL_HOURS,
+    MAX_REQUESTS_PER_BIN,
+    REQUEST_TTL_HOURS,
+    SWEEP_INTERVAL_SECONDS,
+)
 
 logger = logging.getLogger(__name__)
-
-def _env_number(name: str, default: str, cast):
-    """Read a numeric env var, naming it if it's unparseable.
-
-    Without this the failure is a bare ValueError raised at import time,
-    which stops the app from starting without saying which var is wrong.
-    """
-    raw = os.getenv(name, default).strip()
-    try:
-        return cast(raw)
-    except ValueError:
-        raise ValueError(f"{name} must be a number, got {raw!r}") from None
-
-
-SWEEP_INTERVAL_SECONDS = _env_number("SWEEP_INTERVAL_SECONDS", "300", float)
-# Fractional hours are allowed so the TTLs can be turned down to minutes for
-# a manual test (0.05 == 3 minutes).
-BIN_TTL_HOURS = _env_number("BIN_TTL_HOURS", "48", float)
-REQUEST_TTL_HOURS = _env_number("REQUEST_TTL_HOURS", "48", float)
-MAX_REQUESTS_PER_BIN = _env_number("MAX_REQUESTS_PER_BIN", "200", int)
-
 
 def run_sweep() -> list[tuple[str, dict]]:
     """
