@@ -9,14 +9,18 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 
-# Read the database URL from the same environment variable as models/database.py
-# Same DATABASE_URL the app uses, fetched from AWS rather than hardcoded
-# in alembic.ini.
-from config import DATABASE_URL
-
-# configparser treats % as interpolation syntax, so a percent-encoded
-# password (e.g. %21 for "!") has to be escaped as %% here.
-config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("%", "%%"))
+# The app's DATABASE_URL is the restricted requestbin_app role, which has no
+# DDL rights. Migrations need a privileged URL passed explicitly:
+#   alembic -x db_url="postgresql://postgres:...@host:5432/requestbin" upgrade head
+# configparser treats % as interpolation syntax, so a percent-encoded password
+# has to be escaped as %%.
+db_url = context.get_x_argument(as_dictionary=True).get("db_url")
+if not db_url:
+    raise RuntimeError(
+        "Migrations require a privileged database URL. "
+        'Pass it with: alembic -x db_url="postgresql://postgres:...@host:5432/requestbin"'
+    )
+config.set_main_option("sqlalchemy.url", db_url.replace("%", "%%"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
