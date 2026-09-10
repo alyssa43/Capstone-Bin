@@ -12,9 +12,16 @@ import json
 from urllib.parse import quote_plus
 
 import boto3
+import os
 
-REGION = "us-east-1"
-PARAM_PREFIX = "/capstone-bin"
+
+# Deployment-varying: which account's resources this instance reads. Supplied
+# by systemd's EnvironmentFile so the same code can point at a different stack
+# without a code change. Defaults match the current deployment.
+REGION = os.getenv("AWS_REGION", "us-east-1")
+PARAM_PREFIX = os.getenv("PARAM_PREFIX", "/capstone-bin")
+POSTGRES_SECRET_ID = os.getenv("POSTGRES_SECRET_ID", "capstone-bin/postgres")
+MONGO_SECRET_ID = os.getenv("MONGO_SECRET_ID", "capstone-bin/mongo")
 
 _ssm = boto3.client("ssm", region_name=REGION)
 _secrets = boto3.client("secretsmanager", region_name=REGION)
@@ -45,8 +52,8 @@ def _require(params, key):
 
 
 _params = _load_parameters(PARAM_PREFIX)
-_pg = _load_secret("capstone-bin/postgres")
-_mongo = _load_secret("capstone-bin/mongo")
+_pg = _load_secret(POSTGRES_SECRET_ID)
+_mongo = _load_secret(MONGO_SECRET_ID)
 
 DATABASE_URL = (
     f"postgresql://{quote_plus(_pg['username'])}:{quote_plus(_pg['password'])}"
