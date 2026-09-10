@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes import bins, catch_all, websocket
+from routes import bins, catch_all, health, websocket
 from services.cleanup import sweep_loop
 
 # Uvicorn only configures its own loggers, so without a root handler the
@@ -39,5 +39,6 @@ app.add_middleware(
 
 # bins must come first -- catch_all's /{full_path:path} would otherwise swallow it.
 app.include_router(bins.router)
+app.include_router(health.router)
 app.include_router(websocket.router)
 app.include_router(catch_all.router)
