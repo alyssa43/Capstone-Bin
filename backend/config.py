@@ -52,6 +52,7 @@ DATABASE_URL = (
     f"postgresql://{quote_plus(_pg['username'])}:{quote_plus(_pg['password'])}"
     f"@{_require(_params, 'postgres/host')}:{_require(_params, 'postgres/port')}"
     f"/{_require(_params, 'postgres/dbname')}"
+    f"?sslmode=verify-full&sslrootcert={_require(_params, 'app/db-ca-file')}"
 )
 
 MONGO_URL = (
